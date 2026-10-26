@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KannadaSahayi - Street & Transit Assistant</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            kannadaRed: '#C8102E',
+            kannadaYellow: '#FFD100',
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .kannada-text { font-family: 'Noto Sans Kannada', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+
+  <!-- Header with Karnataka Flag Accent -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <div class="h-1.5 w-full bg-gradient-to-r from-kannadaRed to-kannadaYellow"></div>
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <span class="text-2xl">🛺</span>
+        <div>
+          <h1 class="text-lg font-bold text-slate-800 leading-tight">KannadaSahayi</h1>
+          <p class="text-xs text-slate-500">Everyday Street & Transit Audio Companion</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <span id="speechStatus" class="text-xs px-2 py-1 bg-emerald-100 text-emerald-800 rounded-full font-medium">
+          Audio Ready
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="max-w-4xl mx-auto px-4 py-6 flex-1 w-full">
+
+    <!-- Search Bar -->
+    <div class="mb-6">
+      <div class="relative">
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Search phrases (e.g., 'meter', 'stop here', 'coffee')..."
+          class="w-full px-4 py-3 pl-11 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-kannadaRed focus:border-transparent bg-white shadow-sm"
+          oninput="handleSearch()"
+        />
+        <svg class="w-5 h-5 text-slate-400 absolute left-3.5 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Mode Selector Tabs -->
+    <div class="flex border-b border-slate-200 mb-6 space-x-2 overflow-x-auto pb-1">
+      <button onclick="setTab('scenarios')" id="tab-scenarios" class="px-4 py-2 font-medium text-sm rounded-lg bg-kannadaRed text-white">
+        Situations & Scenarios
+      </button>
+      <button onclick="setTab('soundboard')" id="tab-soundboard" class="px-4 py-2 font-medium text-sm rounded-lg text-slate-600 hover:bg-slate-100">
+        ⚡ 1-Tap Street Board
+      </button>
+      <button onclick="setTab('numbers')" id="tab-numbers" class="px-4 py-2 font-medium text-sm rounded-lg text-slate-600 hover:bg-slate-100">
+        Numbers & Directions
+      </button>
+    </div>
+
+    <!-- VIEW 1: SCENARIOS -->
+    <div id="view-scenarios" class="space-y-6">
+      <!-- Category Badges -->
+      <div class="flex gap-2 overflow-x-auto pb-2" id="categoryChips">
+        <button onclick="filterCategory('all')" class="cat-chip px-3 py-1.5 text-xs font-semibold rounded-full bg-slate-900 text-white">All</button>
+        <button onclick="filterCategory('auto')" class="cat-chip px-3 py-1.5 text-xs font-semibold rounded-full bg-slate-200 text-slate-700">🛺 Auto Ride</button>
+        <button onclick="filterCategory('bus')" class="cat-chip px-3 py-1.5 text-xs font-semibold rounded-full bg-slate-200 text-slate-700">🚌 Bus & Metro</button>
+        <button onclick="filterCategory('food')" class="cat-chip px-3 py-1.5 text-xs font-semibold rounded-full bg-slate-200 text-slate-700">☕ Darshini / Cafe</button>
+        <button onclick="filterCategory('shop')" class="cat-chip px-3 py-1.5 text-xs font-semibold rounded-full bg-slate-200 text-slate-700">🛒 Kirana / Market</button>
+      </div>
+
+      <!-- Phrase Cards List -->
+      <div id="phraseList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- VIEW 2: ONE-TAP SOUNDBOARD -->
+    <div id="view-soundboard" class="hidden">
+      <p class="text-sm text-slate-500 mb-4">Tap any emergency phrase to speak it out loud instantly on the street.</p>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="soundboardGrid">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- VIEW 3: NUMBERS & DIRECTIONS -->
+    <div id="view-numbers" class="hidden space-y-6">
+      <div>
+        <h3 class="text-md font-bold text-slate-800 mb-3">Essential Numbers</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="numbersGrid">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+      <div>
+        <h3 class="text-md font-bold text-slate-800 mb-3">Street Directions</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="directionsGrid">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
+    Kannada Digital Innovation Hackathon 2026 • Built for everyday Karnataka commuters
+  </footer>
+
+  <!-- Core JavaScript Logic -->
+  <script>
+    // Master Scenario Data
+    const PHRASES = [
+      // Auto Rickshaw
+      { id: 1, cat: 'auto', kannada: 'ಮೆಜೆಸ್ಟಿಕ್‌ಗೆ ಹೋಗ್ತೀರಾ?', translit: 'Majestic-ge hogtheera?', english: 'Will you go to Majestic?', audio: 'ಮೆಜೆಸ್ಟಿಕ್‌ಗೆ ಹೋಗ್ತೀರಾ' },
+      { id: 2, cat: 'auto', kannada: 'ಮೀಟರ್ ಹಾಕಿ ಸರ್.', translit: 'Meter haaki sir.', english: 'Please put the meter, sir.', audio: 'ಮೀಟರ್ ಹಾಕಿ ಸರ್' },
+      { id: 3, cat: 'auto', kannada: 'ಎಷ್ಟು ಆಗುತ್ತೆ?', translit: 'Eshtu aagutthe?', english: 'How much will it cost?', audio: 'ಎಷ್ಟು ಆಗುತ್ತೆ' },
+      { id: 4, cat: 'auto', kannada: 'ಇಲ್ಲಿ ಸ್ವಲ್ಪ ಮುಂದೆ ನಿಲ್ಲಿಸಿ.', translit: 'Illi swalpa munde nillisi.', english: 'Stop a little ahead here.', audio: 'ಇಲ್ಲಿ ಸ್ವಲ್ಪ ಮುಂದೆ ನಿಲ್ಲಿಸಿ' },
+
+      // Bus & Metro
+      { id: 5, cat: 'bus', kannada: 'ಈ ಬಸ್ ಸಿಲ್ಕ್ ಬೋರ್ಡ್‌ಗೆ ಹೋಗುತ್ತಾ?', translit: 'Ee bus Silk Board-ge hoguttha?', english: 'Does this bus go to Silk Board?', audio: 'ಈ ಬಸ್ ಸಿಲ್ಕ್ ಬೋರ್ಡ್‌ಗೆ ಹೋಗುತ್ತಾ' },
+      { id: 6, cat: 'bus', kannada: 'ಮುಂದಿನ ಸ್ಟಾಪ್ ಯಾವುದು?', translit: 'Mundina stop yaavudu?', english: 'Which is the next stop?', audio: 'ಮುಂದಿನ ಸ್ಟಾಪ್ ಯಾವುದು' },
+      { id: 7, cat: 'bus', kannada: 'ಒಂದು ಟಿಕೆಟ್ ಕೊಡಿ.', translit: 'Ondu ticket kodi.', english: 'Give me one ticket.', audio: 'ಒಂದು ಟಿಕೆಟ್ ಕೊಡಿ' },
+      { id: 8, cat: 'bus', kannada: 'ಚಿಲ್ಲರೆ ಇಲ್ಲ, UPI ಮಾಡ್ತೀನಿ.', translit: 'Chillare illa, UPI maadtheeni.', english: 'No change, I will pay via UPI.', audio: 'ಚಿಲ್ಲರೆ ಇಲ್ಲ, ಯುಪಿಐ ಮಾಡ್ತೀನಿ' },
+
+      // Darshini & Food
+      { id: 9, cat: 'food', kannada: 'ಒಂದು ಪ್ಲೇಟ್ ಮಸಾಲೆ ದೋಸೆ ಕೊಡಿ.', translit: 'Ondu plate masala dose kodi.', english: 'Give one plate Masala Dosa.', audio: 'ಒಂದು ಪ್ಲೇಟ್ ಮಸಾಲೆ ದೋಸೆ ಕೊಡಿ' },
+      { id: 10, cat: 'food', kannada: 'ಸ್ವಲ್ಪ ಸಾಂಬಾರ್ ಜಾಸ್ತಿ ಹಾಕಿ.', translit: 'Swalpa saambaar jaasti haaki.', english: 'Put a little more sambar.', audio: 'ಸ್ವಲ್ಪ ಸಾಂಬಾರ್ ಜಾಸ್ತಿ ಹಾಕಿ' },
+      { id: 11, cat: 'food', kannada: 'ಒಂದು ಬಿಸಿ ಫಿಲ್ಟರ್ ಕಾಫಿ ಕೊಡಿ.', translit: 'Ondu bisi filter coffee kodi.', english: 'Give one hot filter coffee.', audio: 'ಒಂದು ಬಿಸಿ ಫಿಲ್ಟರ್ ಕಾಫಿ ಕೊಡಿ' },
+      { id: 12, cat: 'food', kannada: 'ಸ್ವಲ್ಪ ಕಡಿಮೆ ಖಾರ ಮಾಡಿ.', translit: 'Swalpa kadime khaara maadi.', english: 'Make it a little less spicy.', audio: 'ಸ್ವಲ್ಪ ಕಡಿಮೆ ಖಾರ ಮಾಡಿ' },
+
+      // Kirana & Shopping
+      { id: 13, cat: 'shop', kannada: 'ಒಂದು ಕೆಜಿ ಈರುಳ್ಳಿ ಕೊಡಿ.', translit: 'Ondu kg eerulli kodi.', english: 'Give 1 kg onions.', audio: 'ಒಂದು ಕೆಜಿ ಈರುಳ್ಳಿ ಕೊಡಿ' },
+      { id: 14, cat: 'shop', kannada: 'ತಾಜಾ ತರಕಾರಿ ಇದೆಯಾ?', translit: 'Taaja tarakaari ideya?', english: 'Are there fresh vegetables?', audio: 'ತಾಜಾ ತರಕಾರಿ ಇದೆಯಾ' },
+      { id: 15, cat: 'shop', kannada: 'ಬೆಲೆ ಸ್ವಲ್ಪ ಜಾಸ್ತಿ ಆಯ್ತು.', translit: 'Bele swalpa jaasti aaythu.', english: 'The price is a bit high.', audio: 'ಬೆಲೆ ಸ್ವಲ್ಪ ಜಾಸ್ತಿ ಆಯ್ತು' },
+      { id: 16, cat: 'shop', kannada: 'ಕ್ಯೂಆರ್ ಕೋಡ್ ಎಲ್ಲಿದೆ?', translit: 'QR code yellide?', english: 'Where is the QR code?', audio: 'ಕ್ಯೂಆರ್ ಕೋಡ್ ಎಲ್ಲಿದೆ' }
+    ];
+
+    const SOUNDBOARD = [
+      { kannada: 'ಹೌದು', translit: 'Haudu', english: 'Yes', audio: 'ಹೌದು' },
+      { kannada: 'ಇಲ್ಲ', translit: 'Illa', english: 'No', audio: 'ಇಲ್ಲ' },
+      { kannada: 'ಧನ್ಯವಾದಗಳು', translit: 'Dhanyavaadagalu', english: 'Thank you', audio: 'ಧನ್ಯವಾದಗಳು' },
+      { kannada: 'ಇಲ್ಲಿ ನಿಲ್ಲಿಸಿ', translit: 'Illi nillisi', english: 'Stop here', audio: 'ಇಲ್ಲಿ ನಿಲ್ಲಿಸಿ' },
+      { kannada: 'ಎಷ್ಟು ಆಯ್ತು?', translit: 'Eshtu aaythu?', english: 'How much?', audio: 'ಎಷ್ಟು ಆಯ್ತು' },
+      { kannada: 'ಬೇಡ', translit: 'Beda', english: "Don't want", audio: 'ಬೇಡ' },
+      { kannada: 'ಗೊತ್ತಿಲ್ಲ', translit: 'Gothilla', english: "Don't know", audio: 'ಗೊತ್ತಿಲ್ಲ' },
+      { kannada: 'ಮೀಟರ್ ಹಾಕಿ', translit: 'Meter haaki', english: 'Put meter', audio: 'ಮೀಟರ್ ಹಾಕಿ' },
+      { kannada: 'ಸ್ವಲ್ಪ ನಿಲ್ಲಿ', translit: 'Swalpa nilli', english: 'Wait a bit', audio: 'ಸ್ವಲ್ಪ ನಿಲ್ಲಿ' }
+    ];
+
+    const NUMBERS = [
+      { kan: 'ಒಂದು (1)', tr: 'Ondu', en: 'One' },
+      { kan: 'ಎರಡು (2)', tr: 'Eradu', en: 'Two' },
+      { kan: 'ಮೂರು (3)', tr: 'Mooru', en: 'Three' },
+      { kan: 'ನಾಲ್ಕು (4)', tr: 'Naalku', en: 'Four' },
+      { kan: 'ಐದು (5)', tr: 'Aidu', en: 'Five' },
+      { kan: 'ಹತ್ತು (10)', tr: 'Hatthu', en: 'Ten' },
+      { kan: 'ಇಪ್ಪತ್ತು (20)', tr: 'Ippatthu', en: 'Twenty' },
+      { kan: 'ನೂರು (100)', tr: 'Nooru', en: 'Hundred' }
+    ];
+
+    const DIRECTIONS = [
+      { kan: 'ನೇರವಾಗಿ', tr: 'Neravaagi', en: 'Straight' },
+      { kan: 'ಎಡಗಡೆ', tr: 'Edagade', en: 'Left' },
+      { kan: 'ಬಲಗಡೆ', tr: 'Balagade', en: 'Right' },
+      { kan: 'ಹತ್ತಿರ', tr: 'Hatthira', en: 'Near' },
+      { kan: 'ದೂರ', tr: 'Doora', en: 'Far' },
+      { kan: 'ಮುಂದೆ', tr: 'Munde', en: 'Ahead' }
+    ];
+
+    let currentCategory = 'all';
+    let searchQuery = '';
+
+    // Text to Speech Helper
+    function speak(text) {
+      if (!('speechSynthesis' in window)) {
+        alert('Speech Synthesis is not supported in this browser.');
+        return;
+      }
+      window.speechSynthesis.cancel(); // cancel pending speech
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'kn-IN';
+      utterance.rate = 0.85; // Slightly slower for clear pronunciation
+
+      // Fallback matching for Kannada voice
+      const voices = window.speechSynthesis.getVoices();
+      const knVoice = voices.find(v => v.lang.includes('kn') || v.lang.includes('Kannada'));
+      if (knVoice) {
+        utterance.voice = knVoice;
+      }
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // Render Scenarios
+    function renderPhrases() {
+      const container = document.getElementById('phraseList');
+      container.innerHTML = '';
+
+      const filtered = PHRASES.filter(p => {
+        const matchesCategory = currentCategory === 'all' || p.cat === currentCategory;
+        const q = searchQuery.toLowerCase();
+        const matchesSearch = p.english.toLowerCase().includes(q) ||
+                              p.translit.toLowerCase().includes(q) ||
+                              p.kannada.includes(q);
+        return matchesCategory && matchesSearch;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="col-span-full py-12 text-center text-slate-400">No phrases found matching "${searchQuery}".</div>`;
+        return;
+      }
+
+      filtered.forEach(p => {
+        const card = document.createElement('div');
+        card.className = "bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow transition-shadow flex flex-col justify-between";
+        card.innerHTML = `
+          <div>
+            <div class="flex items-start justify-between gap-2">
+              <span class="kannada-text text-xl font-bold text-slate-900 leading-snug">${p.kannada}</span>
+              <button onclick="speak('${p.audio}')" class="p-2 text-kannadaRed hover:bg-red-50 rounded-lg transition" title="Listen">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.765l-4.146-3.11H2a1 1 0 01-1-1V7.346a1 1 0 011-1h2.237l4.146-3.11a1 1 0 011.146-.16zM15 8a1 1 0 011 1v2a1 1 0 11-2 0V9a1 1 0 011-1zm2-3a1 1 0 011 1v8a1 1 0 11-2 0V6a1 1 0 011-1z" clip-rule="evenodd"></path>
+                </svg>
+              </button>
+            </div>
+            <p class="text-sm font-semibold text-kannadaRed mt-1">${p.translit}</p>
+            <p class="text-sm text-slate-600 mt-0.5">${p.english}</p>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Render Soundboard
+    function renderSoundboard() {
+      const container = document.getElementById('soundboardGrid');
+      container.innerHTML = '';
+      SOUNDBOARD.forEach(item => {
+        const btn = document.createElement('button');
+        btn.onclick = () => speak(item.audio);
+        btn.className = "p-4 bg-white border border-slate-200 rounded-xl hover:border-kannadaRed hover:shadow-md transition text-left flex flex-col justify-between h-28 active:scale-95";
+        btn.innerHTML = `
+          <div class="flex justify-between items-center w-full">
+            <span class="text-xs uppercase font-bold tracking-wider text-slate-400">Street Tap</span>
+            <span class="text-kannadaRed text-lg">🔊</span>
+          </div>
+          <div>
+            <div class="kannada-text text-lg font-bold text-slate-900 leading-tight">${item.kannada}</div>
+            <div class="text-xs font-semibold text-kannadaRed">${item.translit}</div>
+            <div class="text-xs text-slate-500">${item.english}</div>
+          </div>
+        `;
+        container.appendChild(btn);
+      });
+    }
+
+    // Render Numbers & Directions
+    function renderNumbersAndDirections() {
+      const numContainer = document.getElementById('numbersGrid');
+      numContainer.innerHTML = '';
+      NUMBERS.forEach(item => {
+        const card = document.createElement('div');
+        card.onclick = () => speak(item.kan.split(' ')[0]);
+        card.className = "p-3 bg-white border border-slate-200 rounded-lg cursor-pointer hover:border-kannadaRed text-center transition";
+        card.innerHTML = `
+          <div class="kannada-text font-bold text-slate-800">${item.kan}</div>
+          <div class="text-xs text-kannadaRed font-medium">${item.tr}</div>
+          <div class="text-xs text-slate-500">${item.en}</div>
+        `;
+        numContainer.appendChild(card);
+      });
+
+      const dirContainer = document.getElementById('directionsGrid');
+      dirContainer.innerHTML = '';
+      DIRECTIONS.forEach(item => {
+        const card = document.createElement('div');
+        card.onclick = () => speak(item.kan);
+        card.className = "p-3 bg-white border border-slate-200 rounded-lg cursor-pointer hover:border-kannadaRed text-center transition";
+        card.innerHTML = `
+          <div class="kannada-text font-bold text-slate-800">${item.kan}</div>
+          <div class="text-xs text-kannadaRed font-medium">${item.tr}</div>
+          <div class="text-xs text-slate-500">${item.en}</div>
+        `;
+        dirContainer.appendChild(card);
+      });
+    }
+
+    // Tab Management
+    function setTab(tabName) {
+      ['scenarios', 'soundboard', 'numbers'].forEach(t => {
+        document.getElementById(`view-${t}`).classList.add('hidden');
+        const btn = document.getElementById(`tab-${t}`);
+        btn.classList.remove('bg-kannadaRed', 'text-white');
+        btn.classList.add('text-slate-600', 'hover:bg-slate-100');
+      });
+
+      document.getElementById(`view-${tabName}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-${tabName}`);
+      activeBtn.classList.remove('text-slate-600', 'hover:bg-slate-100');
+      activeBtn.classList.add('bg-kannadaRed', 'text-white');
+    }
+
+    // Category Filter
+    function filterCategory(cat) {
+      currentCategory = cat;
+      document.querySelectorAll('.cat-chip').forEach(btn => {
+        btn.classList.remove('bg-slate-900', 'text-white');
+        btn.classList.add('bg-slate-200', 'text-slate-700');
+      });
+      event.target.classList.remove('bg-slate-200', 'text-slate-700');
+      event.target.classList.add('bg-slate-900', 'text-white');
+      renderPhrases();
+    }
+
+    function handleSearch() {
+      searchQuery = document.getElementById('searchInput').value;
+      renderPhrases();
+    }
+
+    // Initial load
+    window.onload = () => {
+      renderPhrases();
+      renderSoundboard();
+      renderNumbersAndDirections();
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.onvoiceschanged = () => {
+          // Pre-warm voices list
+          window.speechSynthesis.getVoices();
+        };
+      }
+    };
+  </script>
+</body>
+</html>
